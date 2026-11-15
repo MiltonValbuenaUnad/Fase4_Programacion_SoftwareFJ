@@ -214,3 +214,72 @@ class AsesoriaEspecializada(Servicio):
 # ------------------------------------------------------------------------------
 # ESPACIO PARA LOS SIGUIENTES APORTES (Clase Reserva y Simulación de 10 pruebas)
 # ------------------------------------------------------------------------------
+
+class Reserva(EntidadSistema):
+    """Clase que integra Cliente, Servicio, Duración y Estado de la reserva."""
+    def __init__(self, id_reserva, cliente, servicio, horas_solicitadas):
+        super().__init__(id_reserva)
+        if not isinstance(cliente, Cliente):
+            raise ValidacionError("El objeto asignado debe ser una instancia válida de Cliente.")
+        if not isinstance(servicio, Servicio):
+            raise ValidacionError("El objeto asignado debe ser una instancia válida de Servicio.")
+        if not servicio.disponible:
+            raise ServicioNoDisponibleError(f"El servicio '{servicio._nombre_servicio}' no está disponible actualmente.")
+
+        self.cliente = cliente
+        self.servicio = servicio
+        self.horas_solicitadas = horas_solicitadas
+        self.estado = "Pendiente"
+        self.costo_total = 0.0
+
+    def procesar_reserva(self, descuento=0.0):
+        """Procesa y confirma la reserva aplicando el cálculo de costos con excepciones avanzadas."""
+        try:
+            if self.estado == "Confirmada":
+                raise ReservaInvalidaError("La reserva ya ha sido confirmada anteriormente.")
+
+            # Cálculo polimórfico
+            self.costo_total = self.servicio.calcular_costo(self.horas_solicitadas, descuento=descuento)
+            self.estado = "Confirmada"
+            logging.info(f"ÉXITO: Reserva [{self.id_entidad}] confirmada para {self.cliente.nombre}. Costo: ${self.costo_total:,.2f}")
+
+        except ValidacionError as ve:
+            self.estado = "Fallida"
+            logging.error(f"FALLO VALIDACIÓN en Reserva [{self.id_entidad}]: {str(ve)}")
+            raise ReservaInvalidaError(f"No se pudo procesar la reserva por un error de validación: {str(ve)}") from ve
+
+        except Exception as e:
+            self.estado = "Error"
+            logging.critical(f"ERROR CRÍTICO INESPERADO en Reserva [{self.id_entidad}]: {str(e)}")
+            raise SoftwareFJError(f"Error inesperado procesando reserva: {str(e)}") from e
+
+        else:
+            print(f"  [+] Reserva [{self.id_entidad}] procesada con éxito. Total a pagar: ${self.costo_total:,.2f}")
+
+        finally:
+            print(f"  [*] Auditoría: Finalizó el intento de procesamiento para la Reserva [{self.id_entidad}] (Estado actual: {self.estado}).")
+
+    def cancelar_reserva(self):
+        if self.estado == "Cancelada":
+            raise ReservaInvalidaError("La reserva ya se encuentra cancelada.")
+        self.estado = "Cancelada"
+        logging.info(f"EVENTO: Reserva [{self.id_entidad}] fue cancelada por el cliente.")
+        print(f"  [-] Reserva [{self.id_entidad}] cancelada correctamente.")
+
+    def obtener_detalles(self):
+        return f"Reserva [{self.id_entidad}] | Cliente: {self.cliente.nombre} | Servicio: {self.servicio._nombre_servicio} | Horas: {self.horas_solicitadas} | Estado: {self.estado}"
+
+# ------------------------------------------------------------------------------
+# SIMULACIÓN INTEGRAL (DEMOSTRACIÓN DE 10 OPERACIONES - PUNTOS NATIVOS A PRUEBA)
+# ------------------------------------------------------------------------------
+def ejecutar_simulacion():
+    print("="*80)
+    print("         SOFTWARE FJ - SISTEMA INTEGRAL DE GESTIÓN (DEMOSTRACIÓN DE PRUEBAS)")
+    print("="*80 + "\n")
+
+    logging.info("INICIO DE SESIÓN DE SIMULACIÓN - SOFTWARE FJ")
+
+    # Bancos de almacenamiento en memoria
+    clientes_db = []
+    servicios_db = []
+    reservas_db = []
