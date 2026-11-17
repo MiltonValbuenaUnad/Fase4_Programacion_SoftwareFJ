@@ -137,7 +137,7 @@ class Servicio(EntidadSistema):
         return f"Servicio [{self.id_entidad}] - {self._nombre_servicio} | Tarifa Base/h: ${self._tarifa_base:,.2f} | Estado: {estado_str}"
 
 # ------------------------------------------------------------------------------
-# 6. SERVICIOS ESPECIALIZADOS (Herencia y Sobrescritura)
+# 6. SERVICIOS ESPECIALIZADOS (Herencia y Sobrescritura) (Aporte: Jhonatan)
 # ------------------------------------------------------------------------------
 class ReservaSalas(Servicio):
     """Servicio de alquiler de salas de estudio/reuniones."""
@@ -268,7 +268,7 @@ def ejecutar_simulacion():
         print(f"  [ERROR CAPTURADO]: {e}")
 
     # --------------------------------------------------------------------------
-    # OPERACIÓN 2: Intento de creación de Cliente con datos inválidos (Error de Validación)
+    # OPERACIÓN 2: Intento de creación de Cliente con datos inválidos (Error de Validación) (Aporte: Jhoana Vargas)
     # --------------------------------------------------------------------------
     print("\nOperación 2: Registro de Cliente con correo inválido (Detección de Error)")
     try:
