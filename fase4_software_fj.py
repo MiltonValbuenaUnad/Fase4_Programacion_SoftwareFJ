@@ -306,7 +306,7 @@ def ejecutar_simulacion():
         print(f"  [OK - CAPTURADO Y REGISTRADO EN LOG]: {e}")
 
     # --------------------------------------------------------------------------
-    # OPERACIÓN 5: Procesar Reserva 1 Exitosa (Reserva de Sala por 3 horas)
+    # OPERACIÓN 5: Procesar Reserva 1 Exitosa (Reserva de Sala por 3 horas) (Aporte: Jhonatan)
     # --------------------------------------------------------------------------
     print("\nOperación 5: Procesamiento de Reserva 1 Exitosa (Sala de estudio)")
     try:
@@ -315,3 +315,65 @@ def ejecutar_simulacion():
         r1.procesar_reserva(descuento=0.10) # 10% descuento por ser estudiante
     except (SoftwareFJError, ValidacionError) as e:
         print(f"  [ERROR]: {e}")
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 6: Procesar Reserva 2 Exitosa (Asesoría Especializada por 2 horas) (Aporte: Jhoana Vargas)
+    # --------------------------------------------------------------------------
+    print("\nOperación 6: Procesamiento de Reserva 2 Exitosa (Asesoría Senior)")
+    try:
+        r2 = Reserva("RES-02", clientes_db[0], servicios_db[2], horas_solicitadas=2)
+        reservas_db.append(r2)
+        r2.procesar_reserva()
+    except (SoftwareFJError, ValidacionError) as e:
+        print(f"  [ERROR]: {e}")
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 7: Intento de Reserva sobre un Servicio NO Disponible
+    # --------------------------------------------------------------------------
+    print("\nOperación 7: Intento de Reserva en un servicio inactivo/no disponible")
+    try:
+        servicios_db[1].disponible = False # Desactivamos el alquiler de laptop
+        r3 = Reserva("RES-03", clientes_db[0], servicios_db[1], horas_solicitadas=5)
+    except ServicioNoDisponibleError as e:
+        logging.warning(f"CONTROLADO: Intento de reserva en servicio no disponible -> {str(e)}")
+        print(f"  [OK - CAPTURADO Y REGISTRADO EN LOG]: {e}")
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 8: Intento de Reserva con Horas Negativas o Cero (Error de Cálculo)
+    # --------------------------------------------------------------------------
+    print("\nOperación 8: Procesamiento de Reserva con parámetros de tiempo inválidos (0 horas)")
+    try:
+        # Rehabilitamos el servicio para probar el fallo de horas
+        servicios_db[1].disponible = True
+        r4 = Reserva("RES-04", clientes_db[0], servicios_db[1], horas_solicitadas=0)
+        r4.procesar_reserva()
+    except ReservaInvalidaError as e:
+        logging.warning(f"CONTROLADO: Fallo al procesar reserva por duración 0 -> {str(e)}")
+        print(f"  [OK - CAPTURADO Y REGISTRADO EN LOG]: {e}")
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 9: Cancelación Correcta de una Reserva
+    # --------------------------------------------------------------------------
+    print("\nOperación 9: Cancelación de la Reserva RES-01")
+    try:
+        r1.cancelar_reserva()
+    except ReservaInvalidaError as e:
+        print(f"  [ERROR]: {e}")
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 10: Intento de doble cancelación (Verificación de consistencia)
+    # --------------------------------------------------------------------------
+    print("\nOperación 10: Intento de re-cancelar una reserva ya cancelada")
+    try:
+        r1.cancelar_reserva()
+    except ReservaInvalidaError as e:
+        logging.warning(f"CONTROLADO: Error por re-cancelación de reserva -> {str(e)}")
+        print(f"  [OK - CAPTURADO Y REGISTRADO EN LOG]: {e}")
+
+    print("\n" + "="*80)
+    print(" SIMULACIÓN COMPLETADA EXITOSAMENTE SIN CAÍDAS DEL SISTEMA.")
+    print(" Revise el archivo 'registro_eventos.log' para auditar el historial de eventos.")
+    print("="*80 + "\n")
+
+if __name__ == "__main__":
+    ejecutar_simulacion()
