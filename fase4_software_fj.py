@@ -283,3 +283,106 @@ def ejecutar_simulacion():
     clientes_db = []
     servicios_db = []
     reservas_db = []
+            raise ValidacionError("Las horas de alquiler de equipo deben ser superiores a 0.")
+        # Calcula el costo por hora aplicando el porcentaje de descuento
+        costo_horas = (self.tarifa_base * horas) * (1 - descuento)
+        # Suma el impuesto (IVA) y adiciona el depósito de garantía fijo
+        costo_total = (costo_horas * (1 + impuesto)) + self.deposito_garantia
+        return costo_total
+
+
+class AsesoriaEspecializada(Servicio):
+    """Servicio especializado de consultoría y asesoría técnica en desarrollo."""
+
+    # Constructor con tarifa fija de $60,000/h y nivel de experiencia del especialista
+    def __init__(self, id_servicio, especialista, nivel_seniority="Senior"):
+        super().__init__(id_servicio, f"Asesoría Especializada con {especialista}", tarifa_base=60000)
+        self.especialista = especialista          # Nombre del profesional asignado
+        self.nivel_seniority = nivel_seniority    # Nivel técnico (ej. Senior o Junior)
+
+    # Cálculo polimórfico del costo total de la asesoría
+    def calcular_costo(self, horas, descuento=0.0, impuesto=0.19):
+        if horas <= 0:
+            raise ValidacionError("La duración de la asesoría debe ser de al menos 1 hora.")
+        # Aplica un incremento del 30% si el especialista es nivel Senior
+        factor_seniority = 1.3 if self.nivel_seniority == "Senior" else 1.0
+        # Calcula la tarifa por hora ajustada según el nivel
+        tarifa_ajustada = self.tarifa_base * factor_seniority
+        # Calcula el subtotal descontando promociones
+        subtotal = (tarifa_ajustada * horas) * (1 - descuento)
+        # Retorna el valor final con impuestos incluidos
+        return subtotal * (1 + impuesto)
+
+
+# ------------------------------------------------------------------------------
+# 5. CLASE RESERVA - Gestión del Proceso y Control de Estado (Aporte: Jhoana Vargas)
+# ------------------------------------------------------------------------------
+class Reserva(EntidadSistema):
+    """Clase que integra Cliente, Servicio, Duración y Estado de la reserva."""
+
+    # Constructor que valida las instancias y la disponibilidad del servicio
+    def __init__(self, id_reserva, cliente, servicio, horas_solicitadas):
+        super().__init__(id_reserva)  # Asigna el identificador único de la reserva
+        # Verifica que el objeto recibido sea una instancia válida de Cliente
+        if not isinstance(cliente, Cliente):
+            raise ValidacionError("El objeto asignado debe ser una instancia válida de Cliente.")
+        # Verifica que el objeto recibido sea una instancia válida de Servicio
+        if not isinstance(servicio, Servicio):
+            raise ValidacionError("El objeto asignado debe ser una instancia válida de Servicio.")
+        # Verifica que el servicio se encuentre activo/disponible antes de reservar
+        if not servicio.disponible:
+            raise ServicioNoDisponibleError(f"El servicio '{servicio._nombre_servicio}' no está disponible actualmente.")
+
+        self.cliente = cliente                    # Asocia el objeto Cliente
+        self.servicio = servicio                  # Asocia el objeto Servicio
+        self.horas_solicitadas = horas_solicitadas  # Guarda la duración en horas
+        self.estado = "Pendiente"                 # Estado inicial por defecto
+        self.costo_total = 0.0                    # Inicializa el costo en cero
+
+    # Procesa y confirma la reserva usando try/except/else/finally y encadenamiento
+    def procesar_reserva(self, descuento=0.0):
+        """Procesa y confirma la reserva aplicando el cálculo de costos con excepciones avanzadas."""
+        try:
+            # Evita confirmar dos veces una misma reserva
+            if self.estado == "Confirmada":
+                raise ReservaInvalidaError("La reserva ya ha sido confirmada anteriormente.")
+
+            # Llama de forma polimórfica al cálculo de costo según el tipo de servicio
+            self.costo_total = self.servicio.calcular_costo(self.horas_solicitadas, descuento=descuento)
+            # Cambia el estado de la reserva a Confirmada
+            self.estado = "Confirmada"
+            # Registra la operación exitosa en el archivo de logs
+            logging.info(f"ÉXITO: Reserva [{self.id_entidad}] confirmada para {self.cliente.nombre}. Costo: ${self.costo_total:,.2f}")
+
+        except ValidacionError as ve:
+            # Marca la reserva como fallida si hay errores de parámetros (ej. horas <= 0)
+            self.estado = "Fallida"
+            logging.error(f"FALLO VALIDACIÓN en Reserva [{self.id_entidad}]: {str(ve)}")
+            # Encadena la excepción original hacia una excepción lógica de reserva
+            raise ReservaInvalidaError(f"No se pudo procesar la reserva por un error de validación: {str(ve)}") from ve
+
+        except Exception as e:
+            # Captura cualquier error inesperado para evitar que el programa se detenga
+            self.estado = "Error"
+            logging.critical(f"ERROR CRÍTICO INESPERADO en Reserva [{self.id_entidad}]: {str(e)}")
+            raise SoftwareFJError(f"Error inesperado procesando reserva: {str(e)}") from e
+
+        else:
+            # Se ejecuta únicamente si el bloque try finalizó sin lanzar excepciones
+            print(f"  [+] Reserva [{self.id_entidad}] procesada con éxito. Total a pagar: ${self.costo_total:,.2f}")
+
+        finally:
+            # Se ejecuta siempre, haya ocurrido error o no, para dejar traza en consola
+            print(f"  [*] Auditoría: Finalizó el intento de procesamiento para la Reserva [{self.id_entidad}] (Estado actual: {self.estado}).")
+
+    # Permite cancelar una reserva activa verificando que no esté ya cancelada
+    def cancelar_reserva(self):
+        if self.estado == "Cancelada":
+            raise ReservaInvalidaError("La reserva ya se encuentra cancelada.")
+        self.estado = "Cancelada"  # Actualiza el estado a Cancelada
+        logging.info(f"EVENTO: Reserva [{self.id_entidad}] fue cancelada por el cliente.")
+        print(f"  [-] Reserva [{self.id_entidad}] cancelada correctamente.")
+
+    # Método sobrescrito que devuelve el estado completo de la reserva
+    def obtener_detalles(self):
+        return f"Reserva [{self.id_entidad}] | Cliente: {self.cliente.nombre} | Servicio: {self.servicio._nombre_servicio} | Horas: {self.horas_solicitadas} | Estado: {self.estado}"
