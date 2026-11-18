@@ -283,3 +283,83 @@ def ejecutar_simulacion():
     clientes_db = []
     servicios_db = []
     reservas_db = []
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 1: Creación correcta de un Cliente
+    # --------------------------------------------------------------------------
+    print("Operación 1: Registro correcto de Cliente")
+    try:
+        c1 = Cliente("CLI-01", "Milton Valbuena", "milton@unad.edu.co", "3181234567")
+        clientes_db.append(c1)
+        logging.info(f"ÉXITO: Cliente registrado correctamente -> {c1.obtener_detalles()}")
+        print(f"  [OK] {c1.obtener_detalles()}")
+    except ValidacionError as e:
+        print(f"  [ERROR CAPTURADO]: {e}")
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 2: Cliente con datos inválidos (error esperado)
+    # --------------------------------------------------------------------------
+    print("\nOperación 2: Intento de creación de Cliente con datos inválidos")
+    try:
+        c_invalido = Cliente("CLI-02", "Al", "correo-sin-arroba", "abc123")
+        clientes_db.append(c_invalido)
+    except ValidacionError as e:
+        logging.error(f"FALLO CONTROLADO: Registro de cliente rechazado -> {e}")
+        print(f"  [ERROR CAPTURADO]: {e}")
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 3: Creación correcta de una sala y cálculo con descuento
+    # --------------------------------------------------------------------------
+    print("\nOperación 3: Creación correcta de una Reserva de Sala")
+    try:
+        s1 = ReservaSalas("SAL-01", 10, incluye_proyector=True)
+        servicios_db.append(s1)
+    except ValidacionError as e:
+        logging.error(f"FALLO: No se pudo crear la sala -> {e}")
+        print(f"  [ERROR CAPTURADO]: {e}")
+    else:
+        costo = s1.calcular_costo(2, descuento=0.10)
+        logging.info(f"ÉXITO: Sala creada. Costo 2h con 10% desc.: ${costo:,.2f}")
+        print(f"  [OK] {s1.obtener_detalles()}")
+        print(f"  [OK] Costo 2 horas con 10% de descuento: ${costo:,.2f}")
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 4: Creación incorrecta de servicio + encadenamiento de excepciones
+    # --------------------------------------------------------------------------
+    print("\nOperación 4: Intento de crear un Servicio genérico (clase abstracta)")
+    try:
+        try:
+            servicio_invalido = Servicio("SRV-X", "Servicio genérico", 10000)
+        except TypeError as causa:
+            raise ServicioNoDisponibleError(
+                "No se puede crear un servicio genérico; use un servicio especializado."
+            ) from causa
+    except ServicioNoDisponibleError as e:
+        logging.error(f"FALLO CONTROLADO: {e} | Causa original: {e.__cause__}")
+        print(f"  [ERROR CAPTURADO]: {e}")
+        print(f"  [CAUSA ORIGINAL]: {e.__cause__}")
+
+    # --------------------------------------------------------------------------
+    # OPERACIÓN 5: Servicios válidos y polimorfismo (try/except/else/finally)
+    # --------------------------------------------------------------------------
+    print("\nOperación 5: Creación de Equipo y Asesoría + comparación polimórfica de costos")
+    try:
+        s2 = AlquilerEquipos("EQ-01", "Portátil Core i7")
+        s3 = AsesoriaEspecializada("ASE-01", "Ing. Carlos Rojas", "Senior")
+        servicios_db.extend([s2, s3])
+    except ValidacionError as e:
+        logging.error(f"FALLO: Creación de servicios -> {e}")
+        print(f"  [ERROR CAPTURADO]: {e}")
+    else:
+        for servicio in servicios_db:
+            costo = servicio.calcular_costo(3)
+            logging.info(f"ÉXITO: {servicio.id_entidad} costo 3h = ${costo:,.2f}")
+            print(f"  [OK] {servicio.obtener_detalles()} -> 3h: ${costo:,.2f}")
+    finally:
+        logging.info("Fin de la Operación 5 (bloque finally ejecutado).")
+
+    # >>> Jhoana continúa aquí con las operaciones 6 a 10 <<<
+
+
+if __name__ == "__main__":
+    ejecutar_simulacion()
