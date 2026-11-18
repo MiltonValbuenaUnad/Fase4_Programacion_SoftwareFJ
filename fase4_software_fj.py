@@ -271,7 +271,7 @@ class Reserva(EntidadSistema):
 
 # ------------------------------------------------------------------------------
 # SIMULACIÓN INTEGRAL (DEMOSTRACIÓN DE 10 OPERACIONES - PUNTOS NATIVOS A PRUEBA)
-# ------------------------------------------------------------------------------
+# Aporte jhonatan barrios
 def ejecutar_simulacion():
     print("="*80)
     print("         SOFTWARE FJ - SISTEMA INTEGRAL DE GESTIÓN (DEMOSTRACIÓN DE PRUEBAS)")
