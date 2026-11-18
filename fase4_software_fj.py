@@ -257,7 +257,7 @@ def ejecutar_simulacion():
     reservas_db = []
 
     # --------------------------------------------------------------------------
-    # OPERACIÓN 1: Creación correcta de un Cliente
+    # OPERACIÓN 1: Creación correcta de un Cliente "Aporte jhonatan Barrios"
     # --------------------------------------------------------------------------
     print("Operación 1: Registro correcto de Cliente")
     try:
